@@ -47,6 +47,7 @@ class Resource(object):
                 else:
                     pass
             if board[3] == board[4] == board[5] or \
+               board[1] == board[4] == board[7] or \
                board[0] == board[4] == board[8] or \
                board[2] == board[4] == board[6]:
                 if board[4] == 1:
