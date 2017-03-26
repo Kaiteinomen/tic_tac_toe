@@ -1,9 +1,31 @@
 import falcon
 import json
+from random import shuffle
 board = [0,0,0,0,0,0,0,0,0]
-token = {u'abc' : 1, u'def' : 2}
-status = 'Playing'
-# 'Playing', 'Player 1 wins', 'Player 2 wins', 'Draw' 
+players = []
+next_player = None
+status = 'Waiting'
+# 'Waiting', 'Playing', 'Player 1 wins', 'Player 2 wins', 'Draw'
+
+class PlayerResource(object):
+    def on_get(self, req, resp):
+        pass
+
+    def on_post(self, req, resp):
+        global status, next_player
+        data = json.load(req.stream)
+        print repr(data)
+        resp.body = '{}'
+
+        if len(players) == 0:
+            players.append(data['username'])
+        elif len(players) == 1:
+            players.append(data['username'])
+            shuffle(players)
+            players.insert(0, None)
+            status = 'Playing'
+            next_player = 1
+            print players
 
 class Resource(object):
     def on_get(self, req, resp):
@@ -13,23 +35,26 @@ class Resource(object):
         resp.status = falcon.HTTP_200
 
     def on_post(self, req, resp):
-        global status
+        global status, next_player
         data = json.load(req.stream)     
         print repr(data)
         print repr(data['username'])
         position = int(data['number'])
-        new_token = token[data['username']]
 
-        def is_next_token(token):
-            if board.count(1) == board.count(2) and token == 1:
+        def is_next_token(next_player):
+            if board.count(1) == board.count(2) and next_player == 1:
                 return True
-            elif board.count(1) - board.count(2) == 1 and token == 2:
+            elif board.count(1) - board.count(2) == 1 and next_player == 2:
                 return True
             else:
                 return False
 
-        if 9 >= position >= 1 and board[position - 1] == 0 and is_next_token(new_token) and status == 'Playing':
-            board[position - 1] = token[data['username']]
+        if 9 >= position >= 1 and board[position - 1] == 0 and is_next_token(next_player) and status == 'Playing':
+            board[position - 1] = next_player
+            if next_player == 1:
+                next_player = 2
+            else:
+               next_player = 1
             resp.body = 'OK'
 
             if board[0] == board[1] == board[2] or board[0] == board[3] == board[6]:
@@ -64,8 +89,11 @@ class Resource(object):
             resp.body = 'Fail'
         print repr(board)
         print repr(status)
+        print repr(next_player)
 
 
 r = Resource()
+p = PlayerResource()
 api = falcon.API()
 api.add_route('/', r)
+api.add_route('/player', p)
